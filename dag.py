@@ -7,6 +7,7 @@ import boto3
 import subprocess
 from io import StringIO
 from minio import Minio
+
 # MinIO Configuration
 MINIO_ENDPOINT = "http://100.64.174.155:31444"  # Replace with your MinIO URL
 ACCESS_KEY = "v4bUCLiugmSOYLPp7k8V"
@@ -14,17 +15,22 @@ SECRET_KEY = "lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1"
 BUCKET_NAME = "minio-bucket"
 FILE_NAME = "weather.csv"
 
-# City for which you want weather data
 city = "London"  # Change if needed
 
 s3_client = Minio(
-    "100.64.174.155:31444",  # Use the external IP and NodePort
-    access_key="v4bUCLiugmSOYLPp7k8V",
-    secret_key="lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1",
+    "100.64.174.155:31444",
+    access_key=ACCESS_KEY,
+    secret_key=SECRET_KEY,
     secure=False
 )
 
-
+def install_minio():
+    """Install MinIO client inside the pod before running ETL."""
+    try:
+        subprocess.run("apt update && pip3 install minio", shell=True, check=True)
+        print("✅ MinIO client installed successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error installing MinIO: {e}")
 
 def fetch_weather_data():
     """Fetch hourly weather data using curl and jq."""
@@ -45,7 +51,6 @@ def fetch_weather_data():
     """
     result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
 
-    # Debugging output
     # Parse JSON output
     try:
         data = json.loads(result.stdout)
@@ -88,10 +93,10 @@ def run_etl():
             Body=csv_buffer.getvalue(),
             ContentType="text/csv"
         )
-        print("Weather data updated successfully in MinIO.")
+        print("✅ Weather data updated successfully in MinIO.")
 
     except Exception as e:
-        print(f"ETL failed: {e}")
+        print(f"❌ ETL failed: {e}")
 
 # Airflow DAG Configuration
 default_args = {
@@ -108,15 +113,21 @@ default_args = {
 dag = DAG(
     'twitter_dag',
     default_args=default_args,
-    description='Our first DAG with ETL process!',
-    schedule_interval="*/10 * * * *",  # Run every minute
+    description='ETL process with MinIO installation',
+    schedule_interval="*/10 * * * *",  # Run every 10 minutes
     max_active_runs=1,
 )
 
-runs_etl = PythonOperator(
-    task_id='complete_twitter_etl',
+install_minio_task = PythonOperator(
+    task_id='install_minio',
+    python_callable=install_minio,
+    dag=dag,
+)
+
+run_etl_task = PythonOperator(
+    task_id='run_etl',
     python_callable=run_etl,
     dag=dag,
 )
 
-runs_etl
+install_minio_task >> run_etl_task  # Ensure MinIO installs before ETL
