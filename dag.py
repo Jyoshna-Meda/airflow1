@@ -4,11 +4,11 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from io import StringIO
-from minio import Minio
 import subprocess
 import sys
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'minio'])
 # MinIO Configuration
+from minio import Minio
 MINIO_ENDPOINT = "100.64.174.155:31444"  # Replace with your MinIO URL
 ACCESS_KEY = "v4bUCLiugmSOYLPp7k8V"
 SECRET_KEY = "lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1"
