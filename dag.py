@@ -109,6 +109,7 @@ dag = DAG(
     default_args=default_args,
     description='Our first DAG with ETL process!',
     schedule_interval="*/10 * * * *",  # Run every minute
+    max_active_runs=1,
 )
 
 runs_etl = PythonOperator(
