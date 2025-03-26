@@ -79,7 +79,8 @@ def run_etl():
         """
         
         result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
-        print(result)
+        if not result.stdout.strip():
+           print("Error: API returned an empty response.")
         # Parse JSON output
         try:
             data = json.loads(result.stdout)
