@@ -6,9 +6,13 @@ from airflow.operators.python_operator import PythonOperator
 from io import StringIO
 import subprocess
 import sys
+
+# Install MinIO package
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'minio'])
+
 # MinIO Configuration
 from minio import Minio
+
 MINIO_ENDPOINT = "100.64.174.155:31444"  # Replace with your MinIO URL
 ACCESS_KEY = "v4bUCLiugmSOYLPp7k8V"
 SECRET_KEY = "lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1"
@@ -25,7 +29,6 @@ s3_client = Minio(
     secret_key=SECRET_KEY,
     secure=False
 )
-
 
 def fetch_weather_data():
     """Fetch hourly weather data using curl and jq."""
@@ -55,14 +58,37 @@ def fetch_weather_data():
         print(f"JSON Decode Error: {e}")
         return []
 
-
 def run_etl():
     """Extract, transform, and load weather data into MinIO."""
     try:
         # Fetch new weather data
-        new_data = fetch_weather_data()
-        if not new_data:
-            print("No new data fetched. Skipping update.")
+        curl_command = f"""
+        curl -s "https://wttr.in/{city}?format=j1" | jq -r '
+        .weather[0].hourly[] |
+        {{
+            "pressure": .pressure,
+            "temparature": .tempC,
+            "dewpoint": .DewPointC,
+            "humidity": .humidity,
+            "cloud": .cloudcover,
+            "rainfall": (if .chanceofrain | tonumber > 50 then "yes" else "no" end),
+            "sunshine": .chanceofsunshine,
+            "winddirection": .winddirDegree,
+            "windspeed": .windspeedKmph
+        }}' | jq -s .
+        """
+        
+        result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
+
+        # Parse JSON output
+        try:
+            data = json.loads(result.stdout)
+        except json.JSONDecodeError as e:
+            print(f"JSON Decode Error: {e}")
+            return
+
+        if not data:
+            print("No new data fetched.")
             return
 
         # Download existing CSV from MinIO
@@ -74,7 +100,7 @@ def run_etl():
             existing_df = pd.DataFrame()  # Empty DataFrame if file doesn't exist
 
         # Convert new data to DataFrame
-        new_df = pd.DataFrame(new_data)
+        new_df = pd.DataFrame(data)
         print(new_df)
 
         # Append new data to existing CSV
@@ -88,7 +114,6 @@ def run_etl():
 
     except Exception as e:
         print(f"ETL failed: {e}")
-
 
 # Airflow DAG Configuration
 default_args = {
