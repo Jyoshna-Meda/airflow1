@@ -3,6 +3,9 @@ import json
 import boto3
 import subprocess
 from io import StringIO
+import subprocess
+import sys
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'minio'])
 from minio import Minio
 # MinIO Configuration
 MINIO_ENDPOINT = "100.64.174.155:31444"  # Replace with your MinIO URL
