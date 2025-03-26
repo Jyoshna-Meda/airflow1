@@ -20,7 +20,7 @@ dag = DAG(
     'twitter_dag',
     default_args=default_args,
     description='Our first DAG with ETL process!',
-    schedule_interval="*/1 * * * *",
+    schedule_interval="*/10 * * * *",
 )
 
 runs_etl = PythonOperator(
