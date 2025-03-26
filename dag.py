@@ -3,7 +3,6 @@ import json
 from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from io import StringIO
 import subprocess
 import sys
 
@@ -31,29 +30,38 @@ s3_client = Minio(
 )
 
 def fetch_weather_data():
-    """Fetch hourly weather data using curl and jq."""
-    curl_command = f"""
-    curl -s "https://wttr.in/London?format=j1" | jq -r '
-    .weather[0].hourly[] |
-    {{
-        "pressure": .pressure,
-        "temparature": .tempC,
-        "dewpoint": .DewPointC,
-        "humidity": .humidity,
-        "cloud": .cloudcover,
-        "rainfall": (if .chanceofrain | tonumber > 50 then "yes" else "no" end),
-        "sunshine": .chanceofsunshine,
-        "winddirection": .winddirDegree,
-        "windspeed": .windspeedKmph
-    }}' | jq -s .
-    """
+    """Fetch hourly weather data using curl."""
+    curl_command = 'curl -s "https://wttr.in/London?format=j1"'
 
+    # Run curl command and capture output
     result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
 
-    # Parse JSON output
     try:
+        # Load JSON response
         data = json.loads(result.stdout)
-        return data
+
+        # Extract required fields from JSON
+        hourly_data = data["weather"][0]["hourly"]
+
+        processed_data = []
+        for entry in hourly_data:
+            processed_data.append({
+                "pressure": entry["pressure"],
+                "temperature": entry["tempC"],  # Fixed typo
+                "dewpoint": entry["DewPointC"],
+                "humidity": entry["humidity"],
+                "cloud": entry["cloudcover"],
+                "rainfall": "yes" if int(entry["chanceofrain"]) > 50 else "no",
+                "sunshine": entry["chanceofsunshine"],
+                "winddirection": entry["winddirDegree"],
+                "windspeed": entry["windspeedKmph"]
+            })
+
+        # Print JSON output (equivalent to jq)
+        print(json.dumps(processed_data, indent=2))
+
+        return processed_data
+
     except json.JSONDecodeError as e:
         print(f"JSON Decode Error: {e}")
         return []
@@ -62,32 +70,7 @@ def run_etl():
     """Extract, transform, and load weather data into MinIO."""
     try:
         # Fetch new weather data
-        curl_command = f"""
-        curl -s "https://wttr.in/{city}?format=j1" | jq -r '
-        .weather[0].hourly[] |
-        {{
-            "pressure": .pressure,
-            "temparature": .tempC,
-            "dewpoint": .DewPointC,
-            "humidity": .humidity,
-            "cloud": .cloudcover,
-            "rainfall": (if .chanceofrain | tonumber > 50 then "yes" else "no" end),
-            "sunshine": .chanceofsunshine,
-            "winddirection": .winddirDegree,
-            "windspeed": .windspeedKmph
-        }}' | jq -s .
-        """
-        
-        result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
-        if not result.stdout.strip():
-           print("Error: API returned an empty response.")
-        # Parse JSON output
-        try:
-            data = json.loads(result.stdout)
-            print(data)
-        except json.JSONDecodeError as e:
-            print(f"JSON Decode Error: {e}")
-            return
+        data = fetch_weather_data()
 
         if not data:
             print("No new data fetched.")
@@ -97,7 +80,7 @@ def run_etl():
         try:
             s3_client.fget_object(BUCKET_NAME, FILE_NAME, FILE_NAME)
             existing_df = pd.read_csv(FILE_NAME)
-        except Exception as e:
+        except Exception:
             print(f"{FILE_NAME} does not exist. Creating a new file.")
             existing_df = pd.DataFrame()  # Empty DataFrame if file doesn't exist
 
@@ -141,5 +124,3 @@ run_weather_etl = PythonOperator(
     python_callable=run_etl,
     dag=dag,
 )
-
-run_weather_etl
