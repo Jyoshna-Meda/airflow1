@@ -33,7 +33,7 @@ s3_client = Minio(
 def fetch_weather_data():
     """Fetch hourly weather data using curl and jq."""
     curl_command = f"""
-    curl -s "https://wttr.in/{city}?format=j1" | jq -r '
+    curl -s "https://wttr.in/London?format=j1" | jq -r '
     .weather[0].hourly[] |
     {{
         "pressure": .pressure,
