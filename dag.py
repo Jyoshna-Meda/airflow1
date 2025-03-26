@@ -79,10 +79,11 @@ def run_etl():
         """
         
         result = subprocess.run(curl_command, shell=True, capture_output=True, text=True)
-
+        print(result)
         # Parse JSON output
         try:
             data = json.loads(result.stdout)
+            print(data)
         except json.JSONDecodeError as e:
             print(f"JSON Decode Error: {e}")
             return
