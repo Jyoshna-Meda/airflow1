@@ -6,24 +6,25 @@ import json
 import boto3
 import subprocess
 from io import StringIO
-
+from minio import Minio
 # MinIO Configuration
 MINIO_ENDPOINT = "http://100.64.174.155:31444"  # Replace with your MinIO URL
-ACCESS_KEY = "rootuser"
-SECRET_KEY = "rootpass123"
+ACCESS_KEY = "v4bUCLiugmSOYLPp7k8V"
+SECRET_KEY = "lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1"
 BUCKET_NAME = "minio-bucket"
 FILE_NAME = "weather.csv"
 
 # City for which you want weather data
 city = "London"  # Change if needed
 
-# Initialize MinIO (S3) client
-s3_client = boto3.client(
-    "s3",
-    endpoint_url=MINIO_ENDPOINT,
-    aws_access_key_id=ACCESS_KEY,
-    aws_secret_access_key=SECRET_KEY
+s3_client = Minio(
+    "100.64.174.155:31444",  # Use the external IP and NodePort
+    access_key="v4bUCLiugmSOYLPp7k8V",
+    secret_key="lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1",
+    secure=False
 )
+
+
 
 def fetch_weather_data():
     """Fetch hourly weather data using curl and jq."""
