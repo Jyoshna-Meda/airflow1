@@ -47,7 +47,7 @@ def fetch_weather_data():
         for entry in hourly_data:
             processed_data.append({
                 "pressure": entry["pressure"],
-                "temperature": entry["tempC"],  # Fixed typo
+                "temparature": entry["tempC"],  # Fixed typo
                 "dewpoint": entry["DewPointC"],
                 "humidity": entry["humidity"],
                 "cloud": entry["cloudcover"],
