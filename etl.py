@@ -113,7 +113,7 @@ default_args = {
 }
 
 dag = DAG(
-    'weather_etl_dag',
+    'weather_1',
     default_args=default_args,
     description='DAG to fetch weather data and store it in MinIO',
     schedule_interval="0 * * * *",
