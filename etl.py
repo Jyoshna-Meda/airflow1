@@ -116,7 +116,7 @@ dag = DAG(
     'weather_1',
     default_args=default_args,
     description='DAG to fetch weather data and store it in MinIO',
-    schedule_interval="0 * * * *",
+    schedule_interval="0 */12 * * *",
 )
 
 run_weather_etl = PythonOperator(
