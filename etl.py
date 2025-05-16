@@ -12,9 +12,9 @@ subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'minio'])
 # MinIO Configuration
 from minio import Minio
 
-MINIO_ENDPOINT = "100.64.174.155:31444"  # Replace with your MinIO URL
-ACCESS_KEY = "v4bUCLiugmSOYLPp7k8V"
-SECRET_KEY = "lBQy13DD17eOCO2WPl0CMHbsLSQ4GioSK95YcWP1"
+MINIO_ENDPOINT = "100.64.174.155:30503"  # Replace with your MinIO URL
+ACCESS_KEY = "Oxi8gN6DwJDI41QaZg4j"
+SECRET_KEY = "8aOf3VJ6h9AONVnBnbVjZcTPkixY7u0Ipbbne4Ge"
 BUCKET_NAME = "minio-bucket"
 FILE_NAME = "weather.csv"
 
